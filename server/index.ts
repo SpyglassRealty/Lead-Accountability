@@ -4,13 +4,11 @@ import session from 'express-session';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import cors from 'cors';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { db, schema } from './db/index.js';
 import { eq, desc } from 'drizzle-orm';
 import { startMonitoring } from './services/monitor.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -116,9 +114,10 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, '../dist/client')));
+  const clientPath = join(process.cwd(), 'dist/client');
+  app.use(express.static(clientPath));
   app.get('*', (req, res) => {
-    res.sendFile(join(__dirname, '../dist/client/index.html'));
+    res.sendFile(join(clientPath, 'index.html'));
   });
 }
 

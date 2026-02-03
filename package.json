@@ -2,10 +2,13 @@
   "name": "lead-accountability",
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "vite build && esbuild server/index.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:pg-native",
-    "start": "node dist/server.js",
+    "build": "vite build && esbuild server/index.ts --bundle --platform=node --format=cjs --outfile=dist/server.cjs --packages=external",
+    "start": "node dist/server.cjs",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
