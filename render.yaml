@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: lead-accountability-v2
+    runtime: node
+    region: oregon
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lead-accountability-db
+          property: connectionString
+      - key: FUB_API_KEY
+        sync: false
+      - key: POND_ID
+        value: "18"
+      - key: POND_NAME
+        value: "Money Time Pond"
+      - key: NOTIFICATION_EMAILS
+        value: "john@spyglassrealty.com,kaleigh@spyglassrealty.com"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
