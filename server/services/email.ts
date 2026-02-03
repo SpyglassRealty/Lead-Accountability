@@ -1,6 +1,8 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Only initialize Resend if API key is present and looks valid
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const resend = RESEND_API_KEY && RESEND_API_KEY.startsWith('re_') ? new Resend(RESEND_API_KEY) : null;
 const NOTIFICATION_EMAILS = (process.env.NOTIFICATION_EMAILS || '').split(',').filter(Boolean);
 
 export async function sendTimerExpiredNotification(params: {
@@ -20,6 +22,11 @@ export async function sendTimerExpiredNotification(params: {
     <p><strong>Status:</strong> No call detected within 30 minutes</p>
     <p>The lead has been automatically returned to the Money Time Pond.</p>
   `;
+
+  if (!resend) {
+    console.log('Resend not configured (missing or invalid RESEND_API_KEY), skipping email');
+    return;
+  }
 
   if (NOTIFICATION_EMAILS.length === 0) {
     console.log('No notification emails configured, skipping email');
