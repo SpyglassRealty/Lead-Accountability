@@ -40,10 +40,87 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'leads' | 'sources'>('leads');
   const [monitoredSources, setMonitoredSources] = useState<MonitoredSource[]>([]);
   const [newSourceName, setNewSourceName] = useState('');
+  const [customSourceName, setCustomSourceName] = useState('');
   const [newTimerMinutes, setNewTimerMinutes] = useState(30);
   const [addingSource, setAddingSource] = useState(false);
-  const [availableSources, setAvailableSources] = useState<{ name: string; id: number }[]>([]);
-  const [loadingSources, setLoadingSources] = useState(false);
+
+  // Comprehensive list of FUB lead sources (must match exactly)
+  const availableSources = [
+    // Ylopo
+    'Ylopo',
+    'Ylopo Adwords',
+    'Ylopo Facebook',
+    'Ylopo GBP Ads',
+    'Ylopo Live',
+    'Ylopo LSA',
+    'Ylopo Prospecting',
+    'Ylopo rDC',
+    'Ylopo Seller',
+    // Zillow
+    'Zillow',
+    'Zillow Flex',
+    'Zillow Premier Agent',
+    // Realtor.com
+    'Realtor.com',
+    'Realtor.com Connections Plus',
+    'Realtor.com Opcity',
+    // Other Portals
+    'Homes.com',
+    'Redfin',
+    'Trulia',
+    'Homesnap',
+    'HomeLight',
+    'UpNest',
+    'FastExpert',
+    'Agent Pronto',
+    // Google/Meta
+    'Google Ads',
+    'Google LSA',
+    'Google PPC',
+    'Facebook',
+    'Facebook Ads',
+    'Instagram',
+    'Meta Ads',
+    // Other Paid
+    'Yelp',
+    'Bing Ads',
+    'YouTube',
+    'TikTok',
+    'Nextdoor',
+    // Website/IDX
+    'Website',
+    'IDX',
+    'Sierra Interactive',
+    'BoomTown',
+    'CINC',
+    'Chime',
+    'KVCore',
+    'Real Geeks',
+    'Propertybase',
+    'Follow Up Boss Website',
+    // Organic
+    'Open House',
+    'Sign Call',
+    'Referral',
+    'Past Client',
+    'Sphere',
+    'Walk-In',
+    'Cold Call',
+    'Door Knock',
+    'Direct Mail',
+    'Floor Time',
+    // Other
+    'Builder',
+    'Relocation',
+    'Corporate',
+    'Apartment Locator',
+    'FSBO',
+    'Expired',
+    'Circle Prospecting',
+    'Networking Event',
+    'Other',
+    '-- Custom (type below) --',
+  ];
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -54,23 +131,9 @@ export default function App() {
         if (data.user) {
           loadData();
           loadSources();
-          loadAvailableSources();
         }
       });
   }, []);
-
-  const loadAvailableSources = async () => {
-    setLoadingSources(true);
-    try {
-      const res = await fetch('/api/sources/available', { credentials: 'include' });
-      const data = await res.json();
-      setAvailableSources(data.sources || []);
-    } catch (error) {
-      console.error('Failed to load available sources:', error);
-    } finally {
-      setLoadingSources(false);
-    }
-  };
 
   const loadData = async () => {
     const [assignmentsRes, statsRes] = await Promise.all([
@@ -88,7 +151,12 @@ export default function App() {
   };
 
   const addSource = async () => {
-    if (!newSourceName.trim()) return;
+    // Determine the actual source name to use
+    const sourceName = newSourceName === '-- Custom (type below) --' 
+      ? customSourceName.trim() 
+      : newSourceName.trim();
+    
+    if (!sourceName) return;
     setAddingSource(true);
     
     try {
@@ -97,13 +165,14 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
-          sourceName: newSourceName.trim(),
+          sourceName,
           timerMinutes: newTimerMinutes 
         }),
       });
       
       if (res.ok) {
         setNewSourceName('');
+        setCustomSourceName('');
         setNewTimerMinutes(30);
         loadSources();
       } else {
@@ -342,21 +411,34 @@ export default function App() {
               <div className="flex gap-4 items-end">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Source {loadingSources && <span className="text-gray-400">(loading...)</span>}
+                    Select Source
                   </label>
                   <select
                     value={newSourceName}
-                    onChange={e => setNewSourceName(e.target.value)}
+                    onChange={e => {
+                      setNewSourceName(e.target.value);
+                      if (e.target.value !== '-- Custom (type below) --') {
+                        setCustomSourceName('');
+                      }
+                    }}
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
-                    disabled={loadingSources}
                   >
-                    <option value="">-- Select a source ({availableSources.length} available) --</option>
+                    <option value="">-- Select a source --</option>
                     {availableSources
-                      .filter(s => !monitoredSources.find(ms => ms.sourceName === s.name))
+                      .filter(s => !monitoredSources.find(ms => ms.sourceName === s))
                       .map(source => (
-                        <option key={source.id} value={source.name}>{source.name}</option>
+                        <option key={source} value={source}>{source}</option>
                       ))}
                   </select>
+                  {newSourceName === '-- Custom (type below) --' && (
+                    <input
+                      type="text"
+                      value={customSourceName}
+                      onChange={e => setCustomSourceName(e.target.value)}
+                      placeholder="Enter exact source name from FUB..."
+                      className="w-full mt-2 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  )}
                 </div>
                 <div className="w-32">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -373,7 +455,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={addSource}
-                  disabled={addingSource || !newSourceName.trim()}
+                  disabled={addingSource || (!newSourceName.trim() || (newSourceName === '-- Custom (type below) --' && !customSourceName.trim()))}
                   className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50"
                 >
                   {addingSource ? 'Adding...' : 'Add Source'}
