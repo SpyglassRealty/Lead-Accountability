@@ -60,16 +60,56 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <h1 className="text-2xl font-bold mb-4">Lead Accountability</h1>
-          <p className="text-gray-600 mb-6">Sign in to access the dashboard</p>
-          <a 
-            href="/auth/google"
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-          >
-            Sign in with Google
-          </a>
+      <div className="min-h-screen flex">
+        {/* Left Panel - Branding */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-orange-50 via-rose-50 to-orange-100 flex-col items-center justify-center p-12">
+          <img 
+            src="https://www.spyglassrealty.com/wp-content/uploads/2024/08/Spyglass-logo-rect.png" 
+            alt="Spyglass Realty" 
+            className="w-64 mb-8"
+          />
+          <h1 className="text-4xl font-serif font-bold text-gray-900 mb-6 text-center">
+            Lead Accountability System
+          </h1>
+          <p className="text-gray-600 text-center text-lg max-w-md">
+            Monitor leads in real-time and ensure agents contact them within 30 minutes. 
+            Automated reassignment keeps your pipeline moving.
+          </p>
+        </div>
+
+        {/* Right Panel - Login */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 p-8">
+          <div className="bg-white p-10 rounded-xl shadow-lg max-w-md w-full">
+            {/* Mobile logo */}
+            <div className="lg:hidden flex justify-center mb-6">
+              <img 
+                src="https://www.spyglassrealty.com/wp-content/uploads/2024/08/Spyglass-logo-rect.png" 
+                alt="Spyglass Realty" 
+                className="w-48"
+              />
+            </div>
+            
+            <h2 className="text-3xl font-bold text-gray-900 text-center mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-gray-500 text-center mb-8">
+              Sign in with your Google account to access the dashboard
+            </p>
+            
+            <a 
+              href="/auth/google"
+              className="flex items-center justify-center gap-3 w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-4 px-6 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+              </svg>
+              Sign in with Google
+            </a>
+            
+            <p className="text-gray-400 text-sm text-center mt-6">
+              Access is restricted to authorized Spyglass Realty team members only.
+            </p>
+          </div>
         </div>
       </div>
     );
