@@ -12,6 +12,9 @@ import { startMonitoring } from './services/monitor.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for Render (needed for secure cookies behind reverse proxy)
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -19,7 +22,10 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === 'production' }
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -40,26 +46,37 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: `${BASE_URL}/auth/google/callback`,
   }, async (accessToken, refreshToken, profile, done) => {
-    const email = profile.emails?.[0]?.value;
-    if (!email || !ADMIN_EMAILS.includes(email)) {
-      return done(null, false, { message: 'Not authorized' });
+    try {
+      const email = profile.emails?.[0]?.value;
+      console.log('[Auth] OAuth callback for email:', email);
+      
+      if (!email || !ADMIN_EMAILS.includes(email)) {
+        console.log('[Auth] Email not in allowed list:', email, ADMIN_EMAILS);
+        return done(null, false, { message: 'Not authorized' });
+      }
+      
+      // Upsert user
+      console.log('[Auth] Looking up user in database...');
+      let user = await db.query.users.findFirst({
+        where: eq(schema.users.email, email),
+      });
+      
+      if (!user) {
+        console.log('[Auth] Creating new user...');
+        const [newUser] = await db.insert(schema.users).values({
+          email,
+          name: profile.displayName,
+          isAdmin: 1,
+        }).returning();
+        user = newUser;
+      }
+      
+      console.log('[Auth] User authenticated:', user?.email);
+      return done(null, user);
+    } catch (err) {
+      console.error('[Auth] Error in verify callback:', err);
+      return done(err as Error);
     }
-    
-    // Upsert user
-    let user = await db.query.users.findFirst({
-      where: eq(schema.users.email, email),
-    });
-    
-    if (!user) {
-      const [newUser] = await db.insert(schema.users).values({
-        email,
-        name: profile.displayName,
-        isAdmin: 1,
-      }).returning();
-      user = newUser;
-    }
-    
-    return done(null, user);
   }));
   
   passport.serializeUser((user: any, done) => done(null, user.id));
