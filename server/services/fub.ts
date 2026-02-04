@@ -65,3 +65,50 @@ export async function getAgentInfo(agentId: number): Promise<{ id: number; name:
     return null;
   }
 }
+
+// Get all available lead sources from FUB
+export async function getSources(): Promise<string[]> {
+  try {
+    // FUB doesn't have a dedicated sources endpoint, so we fetch from people with distinct sources
+    // Alternative: use custom fields API or admin settings
+    const data = await fubFetch('/customFields');
+    const sourceField = data.customFields?.find((f: any) => f.name === 'source' || f.label === 'Source');
+    if (sourceField?.options) {
+      return sourceField.options.map((o: any) => o.value || o);
+    }
+    // Fallback: return common sources
+    return [];
+  } catch (error) {
+    console.error('[FUB] Error fetching sources:', error);
+    return [];
+  }
+}
+
+// Get recent leads by source
+export async function getLeadsBySource(source: string, limit = 100): Promise<FubPerson[]> {
+  try {
+    const data = await fubFetch(`/people?source=${encodeURIComponent(source)}&limit=${limit}&sort=-created`);
+    return data.people || [];
+  } catch (error) {
+    console.error(`[FUB] Error fetching leads for source ${source}:`, error);
+    return [];
+  }
+}
+
+// Add a tag to a person
+export async function addTagToPerson(personId: number, tag: string): Promise<void> {
+  // First get current tags
+  const data = await fubFetch(`/people/${personId}`);
+  const currentTags = data.tags || [];
+  
+  // Add new tag if not already present
+  if (!currentTags.includes(tag)) {
+    await fubFetch(`/people/${personId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        tags: [...currentTags, tag],
+      }),
+    });
+    console.log(`[FUB] Added tag "${tag}" to person ${personId}`);
+  }
+}

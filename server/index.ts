@@ -127,6 +127,69 @@ app.get('/api/stats', requireAuth, async (req, res) => {
   res.json(stats);
 });
 
+// Source Management API
+app.get('/api/sources/available', requireAuth, async (req, res) => {
+  try {
+    const { getSources } = await import('./services/fub.js');
+    const sources = await getSources();
+    res.json({ sources });
+  } catch (error) {
+    console.error('[API] Error fetching available sources:', error);
+    res.status(500).json({ error: 'Failed to fetch sources' });
+  }
+});
+
+app.get('/api/sources/monitored', requireAuth, async (req, res) => {
+  const sources = await db.query.monitoredSources.findMany({
+    orderBy: [desc(schema.monitoredSources.createdAt)],
+  });
+  res.json({ sources });
+});
+
+app.post('/api/sources/monitored', requireAuth, async (req, res) => {
+  const { sourceName, timerMinutes = 30 } = req.body;
+  if (!sourceName) {
+    return res.status(400).json({ error: 'sourceName is required' });
+  }
+  
+  try {
+    const user = req.user as any;
+    const [source] = await db.insert(schema.monitoredSources).values({
+      sourceName,
+      timerMinutes,
+      createdBy: user?.email,
+    }).returning();
+    res.json({ source });
+  } catch (error: any) {
+    if (error.code === '23505') { // unique violation
+      return res.status(400).json({ error: 'Source already being monitored' });
+    }
+    console.error('[API] Error adding monitored source:', error);
+    res.status(500).json({ error: 'Failed to add source' });
+  }
+});
+
+app.delete('/api/sources/monitored/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  await db.delete(schema.monitoredSources).where(eq(schema.monitoredSources.id, parseInt(id)));
+  res.json({ success: true });
+});
+
+app.patch('/api/sources/monitored/:id', requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { enabled, timerMinutes } = req.body;
+  
+  const updates: any = {};
+  if (enabled !== undefined) updates.enabled = enabled ? 1 : 0;
+  if (timerMinutes !== undefined) updates.timerMinutes = timerMinutes;
+  
+  const [source] = await db.update(schema.monitoredSources)
+    .set(updates)
+    .where(eq(schema.monitoredSources.id, parseInt(id)))
+    .returning();
+  res.json({ source });
+});
+
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

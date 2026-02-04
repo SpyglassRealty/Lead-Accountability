@@ -22,3 +22,13 @@ export const users = pgTable('users', {
   isAdmin: integer('is_admin').default(0),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// Monitored sources - leads from these sources will be tracked
+export const monitoredSources = pgTable('monitored_sources', {
+  id: serial('id').primaryKey(),
+  sourceName: varchar('source_name', { length: 255 }).notNull().unique(),
+  timerMinutes: integer('timer_minutes').notNull().default(30),
+  enabled: integer('enabled').notNull().default(1),
+  createdAt: timestamp('created_at').defaultNow(),
+  createdBy: varchar('created_by', { length: 255 }),
+});
