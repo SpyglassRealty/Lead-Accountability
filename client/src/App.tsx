@@ -42,35 +42,8 @@ export default function App() {
   const [newSourceName, setNewSourceName] = useState('');
   const [newTimerMinutes, setNewTimerMinutes] = useState(30);
   const [addingSource, setAddingSource] = useState(false);
-
-  // Common FUB lead sources
-  const availableSources = [
-    'Ylopo',
-    'Ylopo Adwords',
-    'Ylopo Facebook',
-    'Ylopo GBP Ads',
-    'Ylopo Live',
-    'Ylopo LSA',
-    'Ylopo Prospecting',
-    'Zillow',
-    'Zillow Flex',
-    'Realtor.com',
-    'Realtor.com Connections Plus',
-    'Homes.com',
-    'Redfin',
-    'Trulia',
-    'Facebook',
-    'Google Ads',
-    'Google LSA',
-    'Yelp',
-    'Website',
-    'Open House',
-    'Referral',
-    'Sign Call',
-    'Past Client',
-    'Sphere',
-    'Other',
-  ];
+  const [availableSources, setAvailableSources] = useState<{ name: string; id: number }[]>([]);
+  const [loadingSources, setLoadingSources] = useState(false);
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -81,9 +54,23 @@ export default function App() {
         if (data.user) {
           loadData();
           loadSources();
+          loadAvailableSources();
         }
       });
   }, []);
+
+  const loadAvailableSources = async () => {
+    setLoadingSources(true);
+    try {
+      const res = await fetch('/api/sources/available', { credentials: 'include' });
+      const data = await res.json();
+      setAvailableSources(data.sources || []);
+    } catch (error) {
+      console.error('Failed to load available sources:', error);
+    } finally {
+      setLoadingSources(false);
+    }
+  };
 
   const loadData = async () => {
     const [assignmentsRes, statsRes] = await Promise.all([
@@ -355,18 +342,19 @@ export default function App() {
               <div className="flex gap-4 items-end">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Source
+                    Select Source {loadingSources && <span className="text-gray-400">(loading...)</span>}
                   </label>
                   <select
                     value={newSourceName}
                     onChange={e => setNewSourceName(e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
+                    disabled={loadingSources}
                   >
-                    <option value="">-- Select a source --</option>
+                    <option value="">-- Select a source ({availableSources.length} available) --</option>
                     {availableSources
-                      .filter(s => !monitoredSources.find(ms => ms.sourceName === s))
+                      .filter(s => !monitoredSources.find(ms => ms.sourceName === s.name))
                       .map(source => (
-                        <option key={source} value={source}>{source}</option>
+                        <option key={source.id} value={source.name}>{source.name}</option>
                       ))}
                   </select>
                 </div>

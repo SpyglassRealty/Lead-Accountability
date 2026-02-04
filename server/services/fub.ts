@@ -67,17 +67,17 @@ export async function getAgentInfo(agentId: number): Promise<{ id: number; name:
 }
 
 // Get all available lead sources from FUB
-export async function getSources(): Promise<string[]> {
+export async function getSources(): Promise<{ name: string; id: number }[]> {
   try {
-    // FUB doesn't have a dedicated sources endpoint, so we fetch from people with distinct sources
-    // Alternative: use custom fields API or admin settings
-    const data = await fubFetch('/customFields');
-    const sourceField = data.customFields?.find((f: any) => f.name === 'source' || f.label === 'Source');
-    if (sourceField?.options) {
-      return sourceField.options.map((o: any) => o.value || o);
-    }
-    // Fallback: return common sources
-    return [];
+    // FUB has a dedicated lead sources endpoint
+    const data = await fubFetch('/leadsources');
+    const sources = data.leadsources || data.leadSources || [];
+    
+    // Return array of source objects with name and id
+    return sources.map((s: any) => ({
+      name: s.name || s.source || 'Unknown',
+      id: s.id
+    })).sort((a: any, b: any) => a.name.localeCompare(b.name));
   } catch (error) {
     console.error('[FUB] Error fetching sources:', error);
     return [];
