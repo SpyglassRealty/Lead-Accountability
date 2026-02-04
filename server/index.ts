@@ -33,11 +33,12 @@ const ADMIN_EMAILS = [
 ];
 
 // Google OAuth setup
+const BASE_URL = process.env.BASE_URL || 'https://lead-accountability-v2.onrender.com';
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback',
+    callbackURL: `${BASE_URL}/auth/google/callback`,
   }, async (accessToken, refreshToken, profile, done) => {
     const email = profile.emails?.[0]?.value;
     if (!email || !ADMIN_EMAILS.includes(email)) {
